@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cfizz"
+version = "0.1.0"
+description = "Chromosome Flow Integration with Zone-Terminal Visualization"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.9"
+keywords = ["bioinformatics", "hi-c", "chromosome-conformation-capture", "zone-terminal-visualization", "tad", "loop", "compartment"]
+authors = [
+    {name = "cfizz developers"}
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Topic :: Scientific/Engineering :: Visualization",
+]
+
+dependencies = [
+    "numpy>=1.23",
+    "scipy>=1.10",
+    "pandas>=1.5",
+    "matplotlib>=3.5",
+    "seaborn>=0.11",
+    "cooler>=0.3",
+    "cooltools>=0.5",
+    "cytoolz>=0.12",
+]
+
+[project.optional-dependencies]
+all = [
+    "pyBigWig>=0.3",
+    "pyensembl>=2.3",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/<username>/cfizz"
+"Issues" = "https://github.com/<username>/cfizz/issues"
+
+[tool.setuptools]
+packages = ["cfizz"]
+include-package-data = true
+
+[tool.setuptools.package-data]
+cfizz = ["*.md"]

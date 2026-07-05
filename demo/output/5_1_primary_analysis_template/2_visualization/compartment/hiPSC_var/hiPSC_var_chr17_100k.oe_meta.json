@@ -1,0 +1,22 @@
+{
+  "mcool_path": "/mnt/g/2_0_demo/cfizz/demo/data/hiPSC_var_chr17.mcool",
+  "chrom": "chr17",
+  "resolution": 100000,
+  "start_pos": 0,
+  "end_pos": 83257441,
+  "sample_name": "hiPSC_var",
+  "balance": false,
+  "shape": [
+    832,
+    832
+  ],
+  "stats": {
+    "n_elements": 689730,
+    "min": 0.0,
+    "max": 288.95927601809956,
+    "mean": 1.002171000581861,
+    "median": 0.7145488029465931,
+    "std": 1.3515302621187766,
+    "method": "cooltools.expected_cis"
+  }
+}

@@ -1,0 +1,22 @@
+# cfizz pip 补充依赖
+# 用法(在 micromamba 激活 cfizz 环境后):
+#   pip install -r requirements.txt
+#   pip install -e .
+#
+# 这个文件是 conda(environment.yml)装不到 / 不便装的包。
+# 核心 conda 依赖请用 environment.yml(已含 numpy/pandas/cooler 等)。
+
+# === Loop detection(pyHICCUPS CLI,conda 装不到) ===
+hicpeaks>=0.3.0
+
+# === 绘图文本自动避让(conda 没装,cfizz viz 用 matplotlib 时建议装) ===
+adjustText>=1.0
+
+# === Cython(cooler/部分 C 扩展编译时用,装 cooler 时会自带,这里列出来更稳) ===
+# cython>=3.0
+
+# === 可选:dev 工具(hicviz-dev 环境专用,cfizz 用户不需要) ===
+# hicviz 是 cfizz 开发的"父项目",只在该仓库开发时需要
+#   pip install -e /path/to/hicviz  # dev only
+# hicviz-pro 是高性能版本,同样仅 dev
+#   pip install -e /path/to/hicviz-pro  # dev only

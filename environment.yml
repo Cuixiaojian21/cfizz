@@ -1,0 +1,63 @@
+# cfizz conda environment
+# 一键创建:
+#   micromamba env create -f environment.yml
+#   micromamba activate cfizz
+#   pip install hicpeaks
+#   pip install -e .
+
+name: cfizz
+channels:
+  - conda-forge
+  - bioconda
+  - nodefaults
+
+dependencies:
+  # === 基础运行时 ===
+  - python=3.12
+  - pip
+
+  # === 数值 / 数据栈 ===
+  - numpy>=1.23
+  - pandas>=1.5
+  - scipy>=1.10
+  - cytoolz>=0.12
+
+  # === 绘图栈 ===
+  - matplotlib>=3.5
+  - seaborn>=0.11
+
+  # === Hi-C 核心:矩阵 I/O + 算法 ===
+  - cooler>=0.3
+  - cooltools>=0.5
+  - bioframe>=0.6
+
+  # === BigWig 读写(7_x 整合图 + 4_1 demo 必需) ===
+  - pybigwig>=0.3
+
+  # === 辅助(统计 + 性能) ===
+  - scikit-image>=0.20
+  - scikit-learn>=1.0
+  - statsmodels>=0.13
+  - patsy>=0.5          # statsmodels 依赖
+  - h5py>=3.0
+  - pyarrow>=10.0       # cooler/cooltools 大文件底层
+  - numba>=0.56
+  - cython>=3.0
+  - tqdm>=4.60
+
+  # === Hi-C 生态工具(cooler/pairtools 链) ===
+  - htslib>=1.18         # samtools/pysam 底层
+  - samtools>=1.18       # BAM 处理
+  - pysam>=0.22          # samtools 的 Python 绑定
+  - pairtools>=1.0       # Hi-C pairs 文件处理
+  - pairix>=0.3          # pairtools 配套索引
+  - pyfaidx>=0.7         # FASTA 索引(若用户备 fasta)
+  - ucsc-fetchchromsizes # cooler/cooltools 初始化
+
+  # === 测序预处理(完整流程必需,fastq → mcool 全链路) ===
+  - fastp>=1.0           # fastq 质控 + adapter 修剪
+  - bwa-mem2>=2.2        # fastq → sam 比对(Hi-C 第一步)
+
+  # === pip 补充区(走 pip 而非 conda)===
+  # hicpeaks(含 pyHICCUPS CLI,conda 装不到):
+  #   pip install hicpeaks

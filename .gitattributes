@@ -1,0 +1,21 @@
+*.py   linguist-language=Python
+*.md   linguist-language=Markdown
+*.rst  linguist-language=reStructuredText
+*.png  linguist-language=Image
+*.svg  linguist-language=Image
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.pdf  binary
+cfizz/demo/data/** binary
+examples_output/** linguist-generated=true
+
+# Force LF for cross-platform consistency
+*.py    eol=lf
+*.md    eol=lf
+*.toml  eol=lf
+*.rst   eol=lf
+*.in    eol=lf
+
+# Exclude noise from git diff
+.gitattributes export-subst
