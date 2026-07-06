@@ -87,7 +87,7 @@ cfizz 依赖分两层,推荐用 **micromamba + pip** 组合安装(也支持 mamb
 
 ```bash
 # 克隆仓库
-git clone https://github.com/<username>/cfizz.git
+git clone https://github.com/Cuixiaojian21/cfizz.git
 cd cfizz
 
 # 用 environment.yml 一键创建 conda 环境(从 conda-forge + bioconda 装)
