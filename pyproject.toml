@@ -7,7 +7,8 @@ name = "cfizz"
 version = "0.1.0"
 description = "Chromosome Flow Integration with Zone-Terminal Visualization"
 readme = "README.md"
-license = {text = "MIT"}
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.9"
 keywords = ["bioinformatics", "hi-c", "chromosome-conformation-capture", "zone-terminal-visualization", "tad", "loop", "compartment"]
 authors = [
@@ -16,7 +17,6 @@ authors = [
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: POSIX :: Linux",
     "Operating System :: MacOS",
     "Operating System :: Microsoft :: Windows",
@@ -51,8 +51,14 @@ all = [
 "Issues" = "https://github.com/<username>/cfizz/issues"
 
 [tool.setuptools]
-packages = ["cfizz"]
 include-package-data = true
+package-dir = {"" = "."}
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["*"]
+exclude = ["examples*", "demo*", "tests*", "scripts*", "docs*", "build*", "dist*", "_*"]
 
 [tool.setuptools.package-data]
-cfizz = ["*.md"]
+"cfizz" = ["*.md"]
+"cfizz.preprocessing" = ["*.sh", "*.py", "*.md"]
