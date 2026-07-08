@@ -18,7 +18,7 @@ from multiprocessing import Pool, cpu_count
 
 from .layout import (
     setup_plot_style,
-    setup_ratio_colormap, 
+    setup_ratio_colormap,
     calculate_heatmap_layout,
     save_figure_multi_format
 )
@@ -26,6 +26,167 @@ from ..io.cooler import read_cooler
 
 
 # =============================================================================
+# Monkey-patch: fix cooltools 0.7.1 `region*_coords[0]` KeyError(0) bug
+# =============================================================================
+#
+# bug 详情:
+#   cooltools 0.7.1 的 `cooltools/api/snipping.py` 里 3 个 class 的 select() 方法
+#   都有同样的 `region*_coords[0]` bug:
+#     line 368-371: CoolerSnipper.select    (balance 模式 snipper — 5_3 走这条)
+#     line 574-577: ObsExpSnipper.select   (obs/exp 模式 snipper — 6_3 走这条)
+#     line 762-765: ExpectedSnipper.select (expected 模式 snipper — 备用)
+#
+# view_df 在 snipper.__init__ 做过 set_index('name'),
+# 然后 view_df.loc['chr17'] 返回 Series, index = ['chrom', 'start', 'end']。
+# 现代 pandas 里 Series[0] 是 标签查找不是位置查找, 所以 region*_coords[0] KeyError(0)。
+#
+# 修复: 把 region*_coords[0] 替换为 region*_coords.iloc[0] (positional 0 = 'chr17' 字符串)
+# 这是 cooltools 内部传单 chrom string 给 cooler.Cooler.offset() 的形式。
+#
+# patch 在 viz/pileup 首次 import 时全局生效, 覆盖 3 个 class 的 select。
+# 它们的 body 略不同 (ExpectedSnipper 没 sparse/_isnan 段), 所以分别 patch,
+# 但 region*_coords[0] / region*_coords[0] 三处都通过 _cfizz_assign_offsets 共享修复。
+try:
+    from cooltools.api.snipping import (
+        CoolerSnipper,
+        ObsExpSnipper,
+        ExpectedSnipper,
+    )
+    from cooltools.lib.numutils import LazyToeplitz
+
+    def _cfizz_start_of(r):
+        """替代 region*_coords[0]: 取 positional 0 = chrom 名 (e.g. 'chr17')。
+        view_df.set_index('name') 后 loc[region] 返回 Series (index=['chrom','start','end']),
+        iloc[0] = 'chrom' 列值 = chrom 名。"""
+        if hasattr(r, 'iloc'):
+            return r.iloc[0]
+        return r[0]
+
+    def _cfizz_assign_offsets(self, region1, region2, region1_coords, region2_coords):
+        """替代原生代码 3 处都会用的两行:
+            self.offsets[region1] = self.clr.offset(region1_coords) - self.clr.offset(region1_coords[0])
+            self.offsets[region2] = self.clr.offset(region2_coords) - self.clr.offset(region2_coords[0])
+        """
+        self.offsets[region1] = self.clr.offset(region1_coords) - self.clr.offset(
+            _cfizz_start_of(region1_coords)
+        )
+        self.offsets[region2] = self.clr.offset(region2_coords) - self.clr.offset(
+            _cfizz_start_of(region2_coords)
+        )
+
+    def _cfizz_compute_isnan_masks(self, region1_coords, region2_coords):
+        """替代 _isnan1 / _isnan2 段 (CoolerSnipper + ObsExpSnipper 都有)。"""
+        if self.clr_weight_name:
+            self._isnan1 = np.isnan(
+                self.clr.bins()[self.clr_weight_name].fetch(region1_coords).values
+            )
+            self._isnan2 = np.isnan(
+                self.clr.bins()[self.clr_weight_name].fetch(region2_coords).values
+            )
+        else:
+            self._isnan1 = np.zeros_like(
+                self.clr.bins()["start"].fetch(region1_coords).values
+            ).astype(bool)
+            self._isnan2 = np.zeros_like(
+                self.clr.bins()["start"].fetch(region2_coords).values
+            ).astype(bool)
+
+    # === Patch 1: CoolerSnipper.select (snipping.py line 365-396) ===
+    def _cfizz_patched_CoolerSnipper_select(self, region1, region2):
+        region1_coords = self.view_df.loc[region1]
+        region2_coords = self.view_df.loc[region2]
+        _cfizz_assign_offsets(self, region1, region2, region1_coords, region2_coords)
+        matrix = self.clr.matrix(**self.cooler_opts).fetch(region1_coords, region2_coords)
+        _cfizz_compute_isnan_masks(self, region1_coords, region2_coords)
+        if self.cooler_opts["sparse"]:
+            matrix = matrix.tocsr()
+        if self.min_diag is not None:
+            lo, hi = self.clr.extent(region1_coords)
+            diags = np.arange(hi - lo, dtype=np.int32)
+            self.diag_indicators[region1] = LazyToeplitz(-diags, diags)
+        return matrix
+    CoolerSnipper.select = _cfizz_patched_CoolerSnipper_select
+
+    # === Patch 2: ObsExpSnipper.select (snipping.py line 551-607) — 6_3 失败那条 ===
+    # 严格按原版 body 顺序:matrix fetch -> sparse -> isnan -> _expected(LazyToeplitz)
+    # -> min_diag(可选),最后返回 matrix。原版 select 还会把 expected 提前缓存成
+    # LazyToeplitz 让后续 snip() 用 self._expected[lo1:hi1, lo2:hi2] 切片,不能漏。
+    def _cfizz_patched_ObsExpSnipper_select(self, region1, region2):
+        if not region1 == region2:
+            raise ValueError("ObsExpSnipper is implemented for cis contacts only.")
+        region1_coords = self.view_df.loc[region1]
+        region2_coords = self.view_df.loc[region2]
+        _cfizz_assign_offsets(self, region1, region2, region1_coords, region2_coords)
+        matrix = self.clr.matrix(**self.cooler_opts).fetch(region1_coords, region2_coords)
+        if self.cooler_opts["sparse"]:
+            matrix = matrix.tocsr()
+        if self.clr_weight_name:
+            self._isnan1 = np.isnan(
+                self.clr.bins()[self.clr_weight_name].fetch(region1_coords).values
+            )
+            self._isnan2 = np.isnan(
+                self.clr.bins()[self.clr_weight_name].fetch(region2_coords).values
+            )
+        else:
+            self._isnan1 = np.zeros_like(
+                self.clr.bins()["start"].fetch(region1_coords).values
+            ).astype(bool)
+            self._isnan2 = np.zeros_like(
+                self.clr.bins()["start"].fetch(region2_coords).values
+            ).astype(bool)
+        # 原版 select 这里 cache expected:snip() 后面要按 region 切片用 self._expected
+        self._expected = LazyToeplitz(
+            self.expected.groupby(["region1", "region2"])
+            .get_group((region1, region2))[self.expected_value_col]
+            .values
+        )
+        if self.min_diag is not None:
+            lo, hi = self.clr.extent(region1_coords)
+            diags = np.arange(hi - lo, dtype=np.int32)
+            self.diag_indicators[region1] = LazyToeplitz(-diags, diags)
+        return matrix
+    ObsExpSnipper.select = _cfizz_patched_ObsExpSnipper_select
+
+    # === Patch 3: ExpectedSnipper.select (snipping.py line 757-778) — 备用 ===
+    def _cfizz_patched_ExpectedSnipper_select(self, region1, region2):
+        if not region1 == region2:
+            raise ValueError("ExpectedSnipper is implemented for cis contacts only.")
+        region1_coords = self.view_df.loc[region1]
+        region2_coords = self.view_df.loc[region2]
+        _cfizz_assign_offsets(self, region1, region2, region1_coords, region2_coords)
+        self.m = np.diff(self.clr.extent(region1_coords))
+        self.n = np.diff(self.clr.extent(region2_coords))
+        self._expected = LazyToeplitz(
+            self.expected.groupby(["region1", "region2"])
+            .get_group((region1, region2))[self.expected_value_col]
+            .values
+        )
+        if self.min_diag is not None:
+            lo, hi = self.clr.extent(region1_coords)
+            diags = np.arange(hi - lo, dtype=np.int32)
+            self.diag_indicators[region1] = LazyToeplitz(-diags, diags)
+        return self._expected
+    ExpectedSnipper.select = _cfizz_patched_ExpectedSnipper_select
+
+    # 注意: _cfizz_assign_offsets / _cfizz_compute_isnan_masks / _cfizz_start_of
+    # 不能 del, 因为 3 个 patched select 是定义在模块级的函数 — 它们以模块全局名
+    # 引用 helper (不是闭包),del 会让 _cfizz_patched_*_select 调用时找不到 helper。
+    # 只 del patched select 函数本身(它们已经赋给 class.select,本地名字不必保留):
+    del (
+        _cfizz_patched_CoolerSnipper_select,
+        _cfizz_patched_ObsExpSnipper_select,
+        _cfizz_patched_ExpectedSnipper_select,
+    )
+except Exception as _e:
+    import warnings
+    warnings.warn(
+        f"cfizz patch: cooltools 0.7.1 Snipper.select not patched because of: {_e}",
+        RuntimeWarning,
+    )
+    del _e
+# =============================================================================
+# =============================================================================
+
 # =============================================================================
 
 def setup_axes(ax):

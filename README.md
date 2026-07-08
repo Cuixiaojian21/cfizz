@@ -109,6 +109,7 @@ pip install -r requirements.txt
 #### 第 3 步:以可编辑模式装 cfizz 本体
 
 ```bash
+cd ../
 pip install -e .
 ```
 
@@ -133,7 +134,7 @@ which pyHICCUPS && pyHICCUPS --version
 
 ## 完整数据流水线
 
-> **cfizz 的强项是流水线末端**(A/B compartment / TAD / Loop 计算 + 差异分析 + 多组学可视化)。**测序预处理**(`fastq → .mcool`)cfizz 提供**参考脚本**(`cfizz/preprocessing/` 目录里的 3 个 .sh + .py),但**不是强制** —— 如果你已有 HiC-Pro / distiller / 其他预处理流程,完全可以跳过这一步,直接把 `.mcool` 喂给 cfizz 的下游分析。
+> **cfizz 的强项是流水线末端**(A/B compartment / TAD / Loop 计算 + 差异分析 + 多组学可视化)。**测序预处理**(`fastq → .mcool`)cfizz 提供**参考脚本**(`cfizz/preprocessing/` 目录里的 3 个 .sh + .py),但**不是强制** —— 如果你已有 HiC-Pro 等其他预处理流程,完全可以跳过这一步,直接把 `.mcool` 喂给 cfizz 的下游分析。
 
 ### 数据流水线总览(fastq → publication-ready)
 
