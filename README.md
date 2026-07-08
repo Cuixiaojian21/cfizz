@@ -109,7 +109,6 @@ pip install -r requirements.txt
 #### 第 3 步:以可编辑模式装 cfizz 本体
 
 ```bash
-cd ../
 pip install -e .
 ```
 
@@ -119,6 +118,7 @@ pip install -e .
 
 ```bash
 # 1. 验证 cfizz 本体
+cd ../
 python -c "import cfizz; print(f'cfizz v{cfizz.__version__} OK')"
 # 期望输出: cfizz v0.1.0 OK
 
