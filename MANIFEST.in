@@ -1,9 +1,6 @@
 include README.md
 include CONTRIBUTING.md
 include LICENSE
-recursive-include cfizz *.py
-recursive-include cfizz *.md
-recursive-include cfizz/examples/*.py
-recursive-include cfizz/examples/*.md
-recursive-include cfizz/demo/data *
 include pyproject.toml
+recursive-include src/cfizz *.py
+recursive-include src/cfizz *.md
