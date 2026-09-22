@@ -6,6 +6,7 @@ Functions for calculating O/E normalized matrices.
 
 import numpy as np
 import os
+import pandas as pd
 from typing import Tuple, Dict, Optional, List, Union
 from pathlib import Path
 import concurrent.futures
@@ -875,11 +876,12 @@ def load_or_compute_oe_matrix(
     output_dir: str,
     sample_name: str = None,
     balance: bool = False,
-    force_recompute: bool = False
+    force_recompute: bool = False,
+    nproc: int = 1,
 ) -> Tuple[np.ndarray, dict]:
     """
     加载或计算 O/E 矩阵（带缓存）
-    
+
     Parameters
     ----------
     mcool_path : str
@@ -896,6 +898,9 @@ def load_or_compute_oe_matrix(
         是否使用平衡矩阵
     force_recompute : bool
         是否强制重新计算
+    nproc : int, optional
+        并行核数,默认 1。透传给 ``calculate_oe_matrix_cooltools`` →
+        ``cooltools.expected_cis`` 的并行参数。T-9.21-followup 增加。
         
     Returns
     -------
@@ -917,7 +922,8 @@ def load_or_compute_oe_matrix(
         mcool_path=mcool_path,
         chrom=chrom,
         resolution=resolution,
-        balance=balance
+        balance=balance,
+        nproc=nproc,  # T-9.21-followup: 透传 nproc
     )
     
     # 获取染色体长度（用于计算 start_pos）
@@ -942,3 +948,145 @@ def load_or_compute_oe_matrix(
     save_oe_matrix_npy(oe_matrix, npy_path, metadata)
     
     return oe_matrix, metadata
+
+
+def compute_expected_cis_dataframe(
+    mcool_path: str,
+    resolution: int = 10_000,
+    balance: bool = True,
+    nproc: int = 8,
+    smooth: bool = True,
+    ignore_diags: int = 2,
+    view_df: Optional[pd.DataFrame] = None,
+) -> pd.DataFrame:
+    """
+    包装 cooltools.expected_cis, 返回 per-sample 全染色体 P(s) DataFrame.
+
+    与 ``cfizz.viz.pileup.plot_multi_tad_boundary_pileup(..., expected_dfs=...)``
+    以及 ``cooltools.saddle(...)`` 直接配套使用。
+
+    Parameters
+    ----------
+    mcool_path : str
+        .mcool 路径(或带 ``::resolutions/N`` 后缀)。
+    resolution : int
+        Hi-C 分辨率 (bp), 默认 10_000。
+    balance : bool
+        是否使用 balance 权重算 P(s)。True → ``clr_weight_name='weight'``;
+        False → ``clr_weight_name=None``。
+    nproc : int
+        cooltools 内部并行核数。
+    smooth : bool
+        是否对 P(s) 曲线做平滑。
+    ignore_diags : int
+        忽略的前 N 条对角线 (用于避免 1d-region 污染)。
+    view_df : pd.DataFrame, optional
+        染色体臂 view。None → 内部自动调 ``get_view_df(clr)`` (含全部
+        染色体, 与 cooltools.pileup 内部 validation 一致)。
+
+    Returns
+    -------
+    expected_df : pd.DataFrame
+        cooltools.expected_cis 的原始输出, 列包括
+        ``region1 / region2 / dist / n_valid / count.sum / count.avg /
+        balanced.sum / balanced.avg / smoothed / smoothed.avg``
+        等; 含全部染色体的 P(s) 行。
+
+    Notes
+    -----
+    与 ``calculate_oe_matrix_cooltools`` (返回 per-chromosome N×N OE 矩阵)
+    不同 — 本函数返回**全染色体 P(s) DataFrame**, 供 pileup / saddle 等需要
+    逐 distance 切片的下游使用。
+
+    故意不按 chrom 过滤: ``cooltools.pileup`` 内部 validation 会用 cooler
+    全 chrom view, 如果 expected_df 少了 chrM/chrY 会 validation 失败。
+
+    Examples
+    --------
+    >>> expected_df = compute_expected_cis_dataframe(
+    ...     "demo/data/hiPSC_nor_chr17.mcool", resolution=10_000,
+    ... )
+    >>> "balanced.avg" in expected_df.columns
+    True
+    """
+    try:
+        import cooler as cooler_lib
+        import cooltools
+    except ImportError:
+        raise ImportError(
+            "cooler and cooltools are required: pip install cooler cooltools"
+        )
+
+    clr = cooler_lib.Cooler(f"{mcool_path}::resolutions/{resolution}")
+
+    if view_df is None:
+        from cfizz.analyze.compartment import get_view_df
+        view_df = get_view_df(clr)
+
+    expected_df = cooltools.expected_cis(
+        clr,
+        view_df=view_df,
+        nproc=nproc,
+        clr_weight_name='weight' if balance else None,
+        smooth=smooth,
+        ignore_diags=ignore_diags,
+    )
+    return expected_df
+
+
+def compute_expected_cis_per_sample(
+    samples: Dict[str, str],
+    resolution: int = 10_000,
+    balance: bool = True,
+    nproc: int = 8,
+    smooth: bool = True,
+    ignore_diags: int = 2,
+) -> List[pd.DataFrame]:
+    """
+    批量算 per-sample 全染色体 P(s) DataFrame.
+
+    保留 ``samples`` 的输入顺序, 返回 list 长度与输入 mcool 数量一致。
+
+    Parameters
+    ----------
+    samples : dict
+        ``{sample_name: mcool_path}`` 映射, 顺序由 Python 3.7+ 字典
+        插入序保证。
+    resolution : int
+        Hi-C 分辨率 (bp)。
+    balance : bool
+        是否使用 balance 权重。
+    nproc : int
+        每个 sample 内部 cooltools 并行核数。
+    smooth : bool
+        是否平滑 P(s) 曲线。
+    ignore_diags : int
+        忽略的前 N 条对角线。
+
+    Returns
+    -------
+    expected_dfs : list of pd.DataFrame
+        长度 = ``len(samples)``, 第 i 个元素是 ``list(samples.values())[i]``
+        对应的 P(s) DataFrame。
+
+    Examples
+    --------
+    >>> samples = {
+    ...     "WT": "/data/wt_chr17.mcool",
+    ...     "KO": "/data/ko_chr17.mcool",
+    ... }
+    >>> expected_dfs = compute_expected_cis_per_sample(samples, nproc=8)
+    >>> len(expected_dfs)
+    2
+    """
+    return [
+        compute_expected_cis_dataframe(
+            mcool,
+            resolution=resolution,
+            balance=balance,
+            nproc=nproc,
+            smooth=smooth,
+            ignore_diags=ignore_diags,
+        )
+        for mcool in samples.values()
+    ]

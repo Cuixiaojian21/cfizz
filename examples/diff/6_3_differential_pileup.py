@@ -34,8 +34,12 @@ import pandas as pd
 warnings.filterwarnings('ignore')
 
 # cfizz imports
-from cfizz.api.integrated.apa_pileup import plot_multi_apa_heatmap
+from cfizz.api.integrated.apa_pileup import (
+    plot_multi_apa_heatmap,
+    compute_apa_oe_pileup_multi,
+)
 from cfizz.viz.pileup import plot_multi_tad_boundary_pileup
+from cfizz.analyze.oe import compute_expected_cis_per_sample
 
 # ============================================================================
 # 路径配置(相对路径)
@@ -107,13 +111,15 @@ def setup_logging(output_root: str):
 def read_diff_loops(diff_root, comparison, diff_type, logger) -> pd.DataFrame:
     """
     读差异 loops(gain = hiPSC_var unique, lost = hiPSC_nor unique)
+    注: 6_1 实际产物命名规则是 1_1_{sample}_unique_loops.tsv (无 _vs_* 后缀)
     """
     t, c = comparison.split('--')  # t=hiPSC_var, c=hiPSC_nor
     loops_dir = Path(diff_root) / 'loops'
     if diff_type == 'gain':
         file = loops_dir / f'1_1_{t}_unique_loops.tsv'
     elif diff_type == 'lost':
-        file = loops_dir / f'1_1_{c}_unique_loops_vs_{t}.tsv'
+        # 6_1 产物命名: 1_1_{c}_unique_loops.tsv (无 _vs_{t} 后缀)
+        file = loops_dir / f'1_1_{c}_unique_loops.tsv'
     else:
         raise ValueError(f"diff_type must be 'gain' or 'lost', got {diff_type}")
     if not file.exists():
@@ -172,7 +178,7 @@ def _rename_for_pileup(boundaries_df: pd.DataFrame) -> pd.DataFrame:
 
 def plot_diff_loops_apa(loops_df, diff_type, comparison, output_dir, logger):
     """
-    差异 loops APA:
+    差异 loops APA (OE + median + linear, 用户推荐配置):
     - gain: hiPSC_var unique loops 在 hiPSC_var / hiPSC_nor 上的 APA
     - lost: hiPSC_nor unique loops 在 hiPSC_var / hiPSC_nor 上的 APA
     """
@@ -189,22 +195,36 @@ def plot_diff_loops_apa(loops_df, diff_type, comparison, output_dir, logger):
 
     output_prefix = str(Path(output_dir) / f"loops_apa_{diff_type}")
 
-    logger.info(f"  画 {diff_type} APA: 2 sample 各自的 mcool + 同一份 {diff_type} loops")
+    logger.info(f"  画 {diff_type} APA (OE+median+linear): 2 sample 各自的 mcool + 同一份 {diff_type} loops")
 
     try:
-        plot_multi_apa_heatmap(
-            mcool_paths=[SAMPLES['hiPSC_var'], SAMPLES['hiPSC_nor']],  # 2 sample
-            loops_paths=[str(loop_tsv), str(loop_tsv)],                  # 同一份 diff loops
+        # 算 per-sample P(s) DataFrame (OE APA 路径需要)
+        from cfizz.api.integrated.apa_pileup import compute_apa_oe_pileup_multi
+        logger.info(f"  → 算 per-sample P(s) DataFrame (nproc=8)...")
+        t_p = time.time()
+        sample_names = list(SAMPLES.keys())
+        expected_dfs = compute_expected_cis_per_sample(
+            SAMPLES, resolution=APA_RESOLUTION, nproc=8, balance=True,
+        )
+        expected_dfs_dict = dict(zip(sample_names, expected_dfs))
+        logger.info(f"  ✓ P(s) 算完 ({time.time() - t_p:.1f}s)")
+
+        compute_apa_oe_pileup_multi(
+            mcool_paths=[SAMPLES['hiPSC_var'], SAMPLES['hiPSC_nor']],
+            loops_paths=[str(loop_tsv), str(loop_tsv)],
+            expected_dfs=[expected_dfs_dict['hiPSC_var'], expected_dfs_dict['hiPSC_nor']],
             output_path=output_prefix,
             sample_names=['hiPSC_var', 'hiPSC_nor'],
+            flank=70_000,  # APA_OE_FLANK (用户推荐配置: OE + median + linear)
             resolution=APA_RESOLUTION,
-            window=APA_WINDOW,
-            corner_size=APA_CORNER_SIZE,
-            min_distance=APA_MIN_DISTANCE,  # 0=不过滤
-            vmin=None,  # 自动计算
-            vmax=None,  # 自动计算
             balance=True,
-            plot_size=4.0,  # 沿用 5_3 4cm
+            method='median',                # ← 用户指定 (替代默认 mean)
+            cmap='coolwarm',
+            color_scale='linear',          # ← 用户指定 (替代默认 log2)
+            vmin=0.5, vmax=2.0,            # obs/exp 中心 1 (linear 范围)
+            cbar_label='median obs/exp',  # linear 时无括号
+            plot_size=3.0,
+            dpi=300,
         )
         for ext in ['.png', '.svg']:
             output_file = Path(f"{output_prefix}{ext}")
@@ -241,16 +261,11 @@ def plot_diff_tad_pileup(boundaries_df, diff_type, window_mult, comparison, outp
 
     try:
         # T-6.18: 算 per-sample P(s) 曲线(参 cooltools CTCF 教程 cell [18])
-        import cooler as cooler_lib
-        import cooltools
-        from cfizz.analyze.compartment import get_view_df
-
-        expected_dfs = []
-        for sample_name in ['hiPSC_var', 'hiPSC_nor']:
-            clr = cooler_lib.Cooler(f"{SAMPLES[sample_name]}::resolutions/{TAD_PILEUP_RESOLUTION}")
-            view_df = get_view_df(clr)
-            exp = cooltools.expected_cis(clr, view_df=view_df, nproc=8)
-            expected_dfs.append(exp)
+        expected_dfs = compute_expected_cis_per_sample(
+            {'hiPSC_var': SAMPLES['hiPSC_var'], 'hiPSC_nor': SAMPLES['hiPSC_nor']},
+            resolution=TAD_PILEUP_RESOLUTION,
+            nproc=8,
+        )
 
         # boundaries_list 是 DataFrame 列表(每 sample 一份)
         plot_multi_tad_boundary_pileup(
@@ -267,8 +282,8 @@ def plot_diff_tad_pileup(boundaries_df, diff_type, window_mult, comparison, outp
             color_scale='log2',                       # T-6.18: OE + log2
             color_scale_for_cbar='log2',              # T-6.18: cbar 刻度跟 heatmap 一致
             cmap='coolwarm',                          # T-6.18: OE 风格发散型 cmap
-            plot_size=4.0,                            # 保持 4cm
-            cbar_label='log2(obs/exp)',               # T-6.18: 跟 color_scale='log2' 一致
+            plot_size=3.0,                            # 保持 4cm
+            cbar_label='log2(mean obs/exp)',          # 跟 method='mean' + color_scale='log2' 一致
             expected_dfs=expected_dfs,                # T-6.18: per-sample P(s)
         )
         for ext in ['.png', '.svg']:

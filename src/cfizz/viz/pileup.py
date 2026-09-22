@@ -526,6 +526,7 @@ def cooltools_tad_pileup(
     view_df: Optional[pd.DataFrame] = None,
     method: str = 'mean',
     nproc: int = 1,
+    clr_weight_name: str = 'weight',
 ) -> np.ndarray:
     """统一接口的 TAD boundary pileup，内部调 cooltools.pileup（已 published）。
 
@@ -568,6 +569,7 @@ def cooltools_tad_pileup(
         flank=flank,
         min_diag='auto',
         nproc=nproc,
+        clr_weight_name=clr_weight_name,
     )
     print(f"stack.shape: {stack.shape}, n_features: {stack.shape[0]}")
     print(f"stack 第一条 snippet[0]: non-NaN count = {np.sum(~np.isnan(stack[0]))}, max = {np.nanmax(stack[0])}, min = {np.nanmin(stack[0])}")
@@ -989,6 +991,7 @@ def plot_multi_tad_boundary_pileup(
                 expected_df=None,
                 method=method,
                 nproc=n_processes if n_processes is not None else 1,
+                clr_weight_name='weight' if balance else None,
             )
         
         # 颜色缩放

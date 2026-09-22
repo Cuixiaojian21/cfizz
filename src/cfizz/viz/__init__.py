@@ -55,8 +55,18 @@ from .pileup import (
 )
 
 from .tracks import (
-    plot_tracks, 
+    plot_tracks,
     add_tracks_to_heatmap
+)
+
+# Distance decay log-log plot (从 g_6d_distance_decay.py 集成)
+from .distance_decay_plot import (
+    plot_distance_decay_curves,
+    save_decay_alpha_table,
+    save_decay_comparison_table,
+    save_decay_data_table,
+    run_distance_decay,
+    DEFAULT_SAMPLE_COLORS,
 )
 
 from .layout import (
@@ -132,4 +142,11 @@ __all__ = [
     "save_figure",
     "generate_output_filename",
     "save_figure_multi_format",
+    # Distance decay
+    "plot_distance_decay_curves",
+    "save_decay_alpha_table",
+    "save_decay_comparison_table",
+    "save_decay_data_table",
+    "run_distance_decay",
+    "DEFAULT_SAMPLE_COLORS",
 ]

@@ -14,7 +14,9 @@ from .oe import (
     compute_expected,
     quick_oe,
     calculate_decay,
-    log2_and_mask
+    log2_and_mask,
+    compute_expected_cis_dataframe,
+    compute_expected_cis_per_sample,
 )
 from .compartment import (
     assign_compartments,
@@ -53,7 +55,11 @@ from .distance import (
     fit_exponential,
     calculate_decay_rate,
     calculate_decay_profile,
-    compare_decay_rates
+    compare_decay_rates,
+    # Distance decay full pipeline (integrated from g_6d_distance_decay.py)
+    process_expected_cis_decay,
+    fit_decay_alpha_segments,
+    compute_distance_decay_per_sample,
 )
 
 __all__ = [
@@ -63,6 +69,8 @@ __all__ = [
     "quick_oe",
     "calculate_decay",
     "log2_and_mask",
+    "compute_expected_cis_dataframe",
+    "compute_expected_cis_per_sample",
     # Compartment
     "assign_compartments",
     "calculate_compartment_strength",
@@ -82,4 +90,7 @@ __all__ = [
     "calculate_decay_rate",
     "calculate_decay_profile",
     "compare_decay_rates",
+    "process_expected_cis_decay",
+    "fit_decay_alpha_segments",
+    "compute_distance_decay_per_sample",
 ]
