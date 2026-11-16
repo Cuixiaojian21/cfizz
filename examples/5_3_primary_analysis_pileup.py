@@ -25,8 +25,9 @@ Example 5_3: Primary Analysis Pileup - 4 类累计分析
 
 import sys
 import os
-# 脚本位于 cfizz/examples/<name>.py → 上 3 层 (到 /mnt/g/2_0_demo/)到 cfizz/
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+# 脚本位于 cfizz/examples/<name>.py → 把仓库的 src/ 加入 sys.path
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(REPO_ROOT, "src"))
 
 import time
 
@@ -41,8 +42,8 @@ OUTPUT_ROOT = os.path.join(DEMO_DIR, "output")
 # 5_1/5_2/5_3 共用一个 output 目录(因为 5_3 读 5_1/5_2 产物)
 OUTPUT_DIR = os.path.join(OUTPUT_ROOT, "5_1_primary_analysis_template")
 
-# FASTA: 直接用绝对路径 (5_3 saddle 算 oe 矩阵需要 fasta)
-FASTA_PATH = "/mnt/e/1_1_LiMin/1_0_supports/hg38/hg38.fa"  # ⚠️ 用户需自己准备 (3GB)
+# FASTA: 优先读环境变量,否则改成自己的 hg38.fa 路径 (3GB)
+FASTA_PATH = os.environ.get("CFIZZ_FASTA", "/path/to/hg38.fa")
 
 # === 双 sample (hiPSC demo) ===
 SAMPLES = {
@@ -111,6 +112,7 @@ def compute_saddle(samples, output_dir, n_bins, vmin, vmax, nproc):
 
     # 5_1 Compartment 产物路径(读已算的全基因组 eigenvector)
     COMP_COMPUTATION_DIR = f"{OUTPUT_DIR}/1_computation/compartment"
+    from cfizz.io.paths import compartment as compartment_paths
 
     # 单 sample heatmap_size = 4cm
     # multi heatmap_size = 4cm (用户要求所有累计分析图统一 4cm)
@@ -126,7 +128,12 @@ def compute_saddle(samples, output_dir, n_bins, vmin, vmax, nproc):
         start = time.time()
         try:
             # 读 5_1 已算的 eigenvector(全基因组,不是 chr1 npy!)
-            eigenvector_path = f"{COMP_COMPUTATION_DIR}/{sample_name}/eigenvector.100k.tsv"
+            eigenvector_path = compartment_paths(
+                sample_name,
+                f"{COMP_COMPUTATION_DIR}/{sample_name}",
+                "chr17",
+                100_000,
+            )["eig_tsv"]
             if not os.path.exists(eigenvector_path):
                 print(f"  ❌ {sample_name}: 5_1 eigenvector 缺失: {eigenvector_path}")
                 results.append((sample_name, 'error', 0))
@@ -161,7 +168,9 @@ def compute_saddle(samples, output_dir, n_bins, vmin, vmax, nproc):
     try:
         cool_files = [f"{p}::resolutions/100000" for p in samples.values()]
         eigenvector_files = [
-            f"{COMP_COMPUTATION_DIR}/{sn}/eigenvector.100k.tsv"
+            compartment_paths(
+                sn, f"{COMP_COMPUTATION_DIR}/{sn}", "chr17", 100_000
+            )["eig_tsv"]
             for sn in samples.keys()
         ]
         # 验证 eigenvector 全部存在

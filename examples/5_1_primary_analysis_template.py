@@ -15,12 +15,12 @@ Example 5_1: Primary Analysis Template - 计算 3 个特征
 输入(相对路径):
   demo/data/hiPSC_nor_chr17.mcool   # chr17 demo mcool (10kb + 100kb)
   demo/data/hiPSC_var_chr17.mcool   # 同上
-  FASTA_PATH 用户需自己准备 (cfizz 默认值: /mnt/g/2_0_demo/1_0_support/hg38.fa)
+  FASTA_PATH 用户需自己准备 (环境变量 CFIZZ_FASTA 或脚本内绝对路径)
   ⚠️ 克隆 cfizz 后必须改成自己的 hg38.fa 路径 (3GB)
 
 产物结构:
   demo/output/5_1_primary_analysis_template/1_computation/
-    compartment/{hiPSC_nor, hiPSC_var}/  # eigenvector.100k.tsv + gc_cov.100k.tsv
+    compartment/{hiPSC_nor, hiPSC_var}/  # eigenvector.{sample}.100k.tsv + gc_cov.100k.tsv + compartment_qc.{sample}.100k.tsv
     tad/{hiPSC_nor, hiPSC_var}/          # insulation + boundaries + tads
     loop/{hiPSC_nor, hiPSC_var}/         # loops.txt
 
@@ -34,9 +34,10 @@ Example 5_1: Primary Analysis Template - 计算 3 个特征
 
 import sys
 import os
-# 脚本位于 cfizz/examples/<name>.py → 上 3 层到 /mnt/g/2_0_demo/ (cfizz 的父目录)
-# 需要在 PYTHONPATH 里能找到 cfizz 包, 所以加的是 cfizz 的父目录
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+# 脚本位于 cfizz/examples/<name>.py → 把仓库的 src/ 加入 sys.path
+# 这样源码 checkout 不先 pip install 也能直接运行
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(REPO_ROOT, "src"))
 
 import time
 
@@ -47,8 +48,8 @@ DATA_DIR = os.path.join(DEMO_DIR, "data")
 OUTPUT_ROOT = os.path.join(DEMO_DIR, "output")
 OUTPUT_DIR = os.path.join(OUTPUT_ROOT, "5_1_primary_analysis_template")
 
-# FASTA: 直接用绝对路径 (用户克隆 cfizz 后需改成自己的 hg38.fa 路径)
-FASTA_PATH = "/mnt/g/2_0_demo/1_0_support/hg38.fa"  # ⚠️ 用户需自己准备 (3GB)
+# FASTA: 优先读环境变量,否则改成自己的 hg38.fa 路径 (3GB)
+FASTA_PATH = os.environ.get("CFIZZ_FASTA", "/path/to/hg38.fa")
 
 # === 双 sample (hiPSC demo) ===
 SAMPLES = {
@@ -99,14 +100,21 @@ def compute_compartment_features(samples, output_dir, resolutions, fasta_path):
                     fasta_path=fasta_path,
                     output_dir=sample_outdir,
                     n_eigs=3,
+                    sample_name=sample_name,
                 )
                 elapsed = time.time() - start
                 # 验证产物
-                res_str = f"{resolution // 1000}k"  # 100_000 → "100k"
-                eig_path = os.path.join(sample_outdir, f"eigenvector.{res_str}.tsv")
+                res_str = f"{resolution // 1000}k" if resolution < 1_000_000 else "1.0M"
+                eig_path = os.path.join(
+                    sample_outdir, f"eigenvector.{sample_name}.{res_str}.tsv"
+                )
                 gc_path = os.path.join(sample_outdir, f"gc_cov.{res_str}.tsv")
+                qc_path = os.path.join(
+                    sample_outdir, f"compartment_qc.{sample_name}.{res_str}.tsv"
+                )
                 if os.path.exists(eig_path) and os.path.getsize(eig_path) > 0 \
-                   and os.path.exists(gc_path) and os.path.getsize(gc_path) > 0:
+                   and os.path.exists(gc_path) and os.path.getsize(gc_path) > 0 \
+                   and os.path.exists(qc_path) and os.path.getsize(qc_path) > 0:
                     results.append((sample_name, resolution, res_str, 'success', elapsed))
                     print(f"  ✅ {sample_name} @ {res_str}: {elapsed:.1f}s "
                           f"({len(eig_df)} bins)")
@@ -114,6 +122,7 @@ def compute_compartment_features(samples, output_dir, resolutions, fasta_path):
                     missing = []
                     if not os.path.exists(eig_path): missing.append(eig_path)
                     if not os.path.exists(gc_path): missing.append(gc_path)
+                    if not os.path.exists(qc_path): missing.append(qc_path)
                     results.append((sample_name, resolution, res_str, 'partial', elapsed))
                     print(f"  ⚠️ {sample_name} @ {res_str}: 缺失 {missing}")
             except Exception as e:
@@ -287,7 +296,7 @@ def main():
     print(f"\n  总耗时: {total_elapsed:.1f}s")
     print(f"\n  产物结构:")
     print(f"    {OUTPUT_DIR}/1_computation/")
-    print(f"      compartment/{{hiPSC_nor, hiPSC_var}}/  # eigenvector.{{res}}.tsv + gc_cov.{{res}}.tsv")
+    print(f"      compartment/{{hiPSC_nor, hiPSC_var}}/  # eigenvector.{{sample}}.{{res}}.tsv + gc_cov.{{res}}.tsv + compartment_qc.{{sample}}.{{res}}.tsv")
     print(f"      tad/{{hiPSC_nor, hiPSC_var}}/          # insulation + boundaries + tads")
     print(f"      loop/{{hiPSC_nor, hiPSC_var}}/         # loops.txt")
     print(f"\n💡 后续可视化需要 oe.npy 矩阵,目前未生成。")

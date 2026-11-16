@@ -24,7 +24,7 @@ A unified package for end-to-end Hi-C differential analysis and
 zone-terminal visualization.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __author__ = "cfizz developers"
 
 # Core imports

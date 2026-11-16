@@ -17,7 +17,8 @@ hiPSC_var vs hiPSC_nor 差异分析可视化(Compartment + TAD + Loops)
 import sys
 import os
 # 脚本位于 cfizz/examples/diff/<name>.py → 上 4 层到 cfizz/
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.join(REPO_ROOT, "src"))
 
 import argparse
 import logging
@@ -52,7 +53,7 @@ from cfizz.api.integrated.heatmap_tracks import GenomeRange
 # 路径配置(相对路径)
 # ============================================================================
 
-# 脚本位于 cfizz/examples/diff/<name>.py → 上 3 层 (到 /mnt/g/2_0_demo/cfizz/) 拼 demo/
+# 脚本位于 cfizz/examples/diff/<name>.py → 把仓库的 src/ 加入 sys.path
 DEMO_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "demo")
 DATA_DIR = os.path.join(DEMO_DIR, "data")
 OUTPUT_ROOT = os.path.join(DEMO_DIR, "output")
@@ -333,7 +334,10 @@ def plot_compartment_diff_region(
         results = []
         for idx, (sample_internal, mcool_path) in enumerate(SAMPLES.items()):
             # 1. eigenvector 路径(5_1 产物)
-            eig_path = f"{OUTPUT_DIR}/1_computation/compartment/{sample_internal}/eigenvector.100k.tsv"
+            eig_path = (
+                f"{OUTPUT_DIR}/1_computation/compartment/{sample_internal}"
+                f"/eigenvector.{sample_internal}.100k.tsv"
+            )
             if not os.path.exists(eig_path):
                 logger.warning(f"    eigenvector 不存在: {eig_path}")
                 continue

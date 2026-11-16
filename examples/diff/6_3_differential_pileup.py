@@ -18,7 +18,8 @@ hiPSC_var vs hiPSC_nor 差异 Pileup(Loops APA + TAD boundary pileup)
 import sys
 import os
 # 脚本位于 cfizz/examples/diff/<name>.py → 上 4 层到 cfizz/
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.join(REPO_ROOT, "src"))
 
 import argparse
 import logging
@@ -45,7 +46,7 @@ from cfizz.analyze.oe import compute_expected_cis_per_sample
 # 路径配置(相对路径)
 # ============================================================================
 
-# 脚本位于 cfizz/examples/diff/<name>.py → 上 3 层 (到 /mnt/g/2_0_demo/cfizz/) 拼 demo/
+# 脚本位于 cfizz/examples/diff/<name>.py → 把仓库的 src/ 加入 sys.path
 DEMO_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "demo")
 DATA_DIR = os.path.join(DEMO_DIR, "data")
 OUTPUT_ROOT = os.path.join(DEMO_DIR, "output")

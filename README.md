@@ -223,15 +223,20 @@ fastq  →  fastp 质控  →  bwa-mem2 比对  →  samtools 转 bam
 |------|------|----------|------|
 | **fasta**(.fa) | bwa-mem2 索引 + cfizz 算 GC cov | ❌ 不带(3GB) | 用户自备(如 `hg38.fa`) |
 | **chrom.sizes**(染色体大小) | pairtools parse / cooler cload 的 bins 规格 | ❌ 不带 | 用户自备,或 `ucsc-fetchchromsizes hg38` 下载 |
+| **cytoBandIdeo**(.txt.gz) | Compartment 按着丝粒拆臂 | ✅ `demo/data/hg38.cytoBand.ideo.txt.gz` | [UCSC hg38 cytoBandIdeo](https://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/cytoBandIdeo.txt.gz) |
 | **bwa 索引**(.amb/.ann/.bwt/.pac/.sa) | bwa-mem2 比对必需 | ❌ 不带 | `bwa-mem2 index hg38.fa` 生成 |
+
+> `demo/data/` 不会随 `pip install` 安装。源码运行时 arm view 自动读取该 cytoBand 文件;安装后请用 `cytoband_file=` 或 `CFIZZ_CYTOBAND=` 指定,否则自动退回整染色体 view。
 
 #### 5_1 example 额外需要 fasta
 
-`5_1` 走 `cfizz.analyze.compartment.process_compartment` 算 Compartment,内部需要 fasta 计算 GC 含量。路径在 `examples/5_1_primary_analysis_template.py` 顶部 `FASTA_PATH` 变量设置:
+`5_1` 走 `cfizz.analyze.compartment.process_compartment` 算 Compartment,内部需要 fasta 计算 GC 含量。推荐用环境变量:
 
-```python
-FASTA_PATH = "/path/to/your/hg38.fa"  # ⚠️ 改成你自己的 fasta 路径
+```bash
+export CFIZZ_FASTA=/path/to/your/hg38.fa
 ```
+
+也可以直接改 `examples/5_1_primary_analysis_template.py` 顶部的 `FASTA_PATH`。
 
 ## 示例脚本(`cfizz/examples/`)
 
@@ -249,8 +254,9 @@ FASTA_PATH = "/path/to/your/hg38.fa"  # ⚠️ 改成你自己的 fasta 路径
 ```
 1_computation/                  # 原始计算产物(tsv)
   compartment/{hiPSC_nor, hiPSC_var}/
-    eigenvector.100k.tsv         # 特征向量(Compartment)
-    gc_cov.100k.tsv              # GC 含量
+    eigenvector.{sample}.100k.tsv        # 特征向量(Compartment)
+    gc_cov.100k.tsv                      # GC 含量
+    compartment_qc.{sample}.100k.tsv      # 逐 region 质量体检表
   tad/{hiPSC_nor, hiPSC_var}/
     *.10000.insulation.tsv       # 绝缘分数
     *.{50kb,100kb,500kb}.boundaries.tsv  # 边界
@@ -266,9 +272,17 @@ FASTA_PATH = "/path/to/your/hg38.fa"  # ⚠️ 改成你自己的 fasta 路径
     compartment/  loops/  tad_boundary/  viz/
 ```
 
+**Compartment 计算说明**:
+
+- 默认 `view="arm"`:按 UCSC cytoBandIdeo 的着丝粒把染色体切成 p/q 两臂,分别做特征分解,避免 PC1 抓到"两臂分离"。
+- 默认 `eig_select="positive"`:在正特征值中取最大者作为 E1,避免 ±近简并对选到反 A/B 向量。
+- 每个 region 的 QC 指标(`n_runs`、`max_block_frac`、`gc_corr` 等)写入 `compartment_qc.{sample}.{res}.tsv`。
+- 如需旧行为,可传 `view="chromosome"`。
+
 **跑法**:
 ```bash
 cd /path/to/cfizz
+export CFIZZ_FASTA=/path/to/hg38.fa
 python examples/5_1_primary_analysis_template.py
 ```
 
@@ -709,8 +723,8 @@ analyze_single_comparison(
     comparison=comparison,                            # 比较组名(如 "hiPSC_var--hiPSC_nor")
     output_root=str(output_dir / comparison),         # 输出根目录
     run_mode='all',                                   # 运行模式:all=计算+绘图 / compute=只算 / plot=只画
-    control_e1_path=str(control_e1_path),             # 对照组 eigenvector.100k.tsv(从 5_1 读)
-    treatment_e1_path=str(treatment_e1_path),         # 处理组 eigenvector.100k.tsv(从 5_1 读)
+    control_e1_path=str(control_e1_path),             # 对照组 eigenvector.{sample}.100k.tsv(从 5_1 读)
+    treatment_e1_path=str(treatment_e1_path),         # 处理组 eigenvector.{sample}.100k.tsv(从 5_1 读)
 )
 ```
 
@@ -856,8 +870,8 @@ plot_multi_compartment(
 | `COMPARTMENT_HALF_SPAN_BINS` | 区域中心 ±多少 bin | `45`(默认 4.5Mb @ 100kb)|
 
 <p align="center">
-  <b>1. Compartment 差异区域 B_to_A(示例:chr17:53.25M-62.25M,plot_multi_compartment)</b><br>
-  <img src="demo/output/5_1_primary_analysis_template/4_differential/hiPSC_var--hiPSC_nor/viz/compartment/B_to_A/compartment_chr17_53250000_62250000.svg" width="500">
+  <b>1. Compartment 差异区域 B_to_A(示例:chr17:52.35M-61.35M,plot_multi_compartment)</b><br>
+  <img src="demo/output/5_1_primary_analysis_template/4_differential/hiPSC_var--hiPSC_nor/viz/compartment/B_to_A/compartment_chr17_52350000_61350000.svg" width="500">
 </p>
 
 #### 2. TAD 边界差异(每个 Unique_boundary / Boundary_shift 区域单独画,只展示 10b)

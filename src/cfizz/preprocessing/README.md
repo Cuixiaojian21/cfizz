@@ -214,9 +214,9 @@ set -euo pipefail:任一步失败立即停
 
 本目录的 3 个脚本来自用户原项目的 3 个家什,经**统一参数化**收进 cfizz 仓库,对应关系:
 
-| 本目录 | 原版(用户 `G:\2_0_demo\script\`) | 改了什么 |
-|--------|----------------------------------|----------|
-| `fastq2pairs.sh` | `a_1_run_50_1_50_2.sh` | 50_1/50_2 → `--samples`;<br/>/mnt/wsl/PHYSICALDRIVE6p1/... → `--data-dir` / `--output-root` / `--bwa-index` / `--chrom-sizes`;<br/>16 核写死 → `--nproc 8` 默认 + `--max-parallel 1` 并发可控 |
+| 本目录 | 原版脚本 | 改了什么 |
+|--------|----------|----------|
+| `fastq2pairs.sh` | `a_1_run_50_1_50_2.sh` | 50_1/50_2 → `--samples`;<br/>硬编码路径 → `--data-dir` / `--output-root` / `--bwa-index` / `--chrom-sizes`;<br/>16 核写死 → `--nproc 8` 默认 + `--max-parallel 1` 并发可控 |
 | `pairs2mcool.sh` | `a_2_pairs2mcool_50_1_50_2.sh` | 同上;**L46-52 if/else 拆 50_1/50_2 路径已改为循环**(派生自 `--output-root/<sample_id>/pairtools/`) |
 | `stats.py` | `a_1_z_processing_stats.py` | 模块级 4 项硬编码(BASE_DIR/PAIRS_RESULT_ROOT/SAMPLES/SAMPLE_DISPLAY_NAMES)删除,改为 argparse 必填;<br/>`--ppt / --no-ppt` 替换原 `--ppt` 单独 flag |
 

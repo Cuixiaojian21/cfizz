@@ -26,8 +26,9 @@ Example 5_2: Primary Analysis Visualization
 
 import sys
 import os
-# 脚本位于 cfizz/examples/<name>.py → 上 3 层 (到 /mnt/g/2_0_demo/)到 cfizz/
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+# 脚本位于 cfizz/examples/<name>.py → 把仓库的 src/ 加入 sys.path
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(REPO_ROOT, "src"))
 
 import time
 
@@ -42,8 +43,8 @@ OUTPUT_ROOT = os.path.join(DEMO_DIR, "output")
 # 5_1/5_2 共用一个 output 目录(因为 5_2 读 5_1 产物)
 OUTPUT_DIR = os.path.join(OUTPUT_ROOT, "5_1_primary_analysis_template")
 
-# FASTA: 直接用绝对路径 (5_2 暂不用,保留供未来扩展)
-FASTA_PATH = "/mnt/g/2_0_demo/1_0_support/hg38.fa"  # ⚠️ 用户需自己准备 (3GB)
+# FASTA: 5_2 暂不使用, 保留供未来扩展
+FASTA_PATH = os.environ.get("CFIZZ_FASTA", "/path/to/hg38.fa")
 
 # === 双 sample (hiPSC demo) ===
 SAMPLES = {
@@ -213,7 +214,10 @@ def visualize_compartment(samples, viz_dir, comp_dir):
         os.makedirs(sample_viz_dir, exist_ok=True)
 
         # Step A: 5_1 已算的 eigenvector 路径(只读不重算)
-        eig_path = f"{comp_dir}/{sample_name}/eigenvector.100k.tsv"
+        from cfizz.io.paths import compartment as compartment_paths
+        eig_path = compartment_paths(
+            sample_name, os.path.join(comp_dir, sample_name), chrom, resolution
+        )["eig_tsv"]
         if not os.path.exists(eig_path):
             print(f"  ❌ {sample_name}: 5_1 eigenvector 缺失: {eig_path}")
             results.append((sample_name, 'error', 0))
@@ -236,10 +240,9 @@ def visualize_compartment(samples, viz_dir, comp_dir):
                   f"elapsed: {time.time()-start:.1f}s")
 
             # Step C: oe.npy 路径(给 plot_compartment 用)
-            oe_npy_path = os.path.join(
-                sample_viz_dir,
-                f"{sample_name}_{chrom}_{resolution//1000}k.oe.npy"
-            )
+            oe_npy_path = compartment_paths(
+                sample_name, sample_viz_dir, chrom, resolution
+            )["oe_npy"]
 
             # Step D: 画图(plot_compartment 自己内部读路径 + 切片)
             plot_compartment(

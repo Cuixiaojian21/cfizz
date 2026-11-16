@@ -21,6 +21,9 @@ from .oe import (
 from .compartment import (
     assign_compartments,
     calculate_compartment_strength,
+    build_arm_view_df,
+    compartment_qc,
+    load_centromere_positions,
     # Diff analysis
     load_compartment_data,
     calculate_compartment_diff,
@@ -74,6 +77,9 @@ __all__ = [
     # Compartment
     "assign_compartments",
     "calculate_compartment_strength",
+    "build_arm_view_df",
+    "compartment_qc",
+    "load_centromere_positions",
     # TAD
     "calculate_insulation",
     "identify_boundaries",

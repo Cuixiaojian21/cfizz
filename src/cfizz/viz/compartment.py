@@ -35,35 +35,38 @@ def calculate_chromosome_data(
     force_recompute: bool = False,
     load_only: bool = False,
 ) -> Tuple[pd.DataFrame, np.ndarray]:
-    res_str = "1.0M" if resolution == 1_000_000 else f"{resolution // 1000}k"
-    eig_file = os.path.join(output_dir, f'1_1.{sample_name}.{res_str}.E1.tsv')
-    prefix = f"{sample_name}_{res_str}_{chrom}_whole"
-    oe_file = os.path.join(output_dir, f"1_3.{prefix}.observed_expected_normalized.txt")
-    
+    from cfizz.io.paths import compartment as compartment_paths
+
+    paths = compartment_paths(sample_name, output_dir, chrom, resolution)
+    eig_file = paths["eig_tsv"]
+    oe_file = paths["oe_npy"]
+
+    def _load_cached():
+        return pd.read_csv(eig_file, sep='\t'), np.load(oe_file)
+
     # load_only 模式：只读取，不计算
     if load_only:
         if os.path.exists(eig_file) and os.path.exists(oe_file):
             print(f"\n[load_only] 加载已有计算结果: {output_dir}")
             try:
-                eig_df = pd.read_csv(eig_file, sep='\t')
-                oe_matrix = np.loadtxt(oe_file)
-                return eig_df, oe_matrix
+                return _load_cached()
             except Exception as e:
-                raise FileNotFoundError(f"load_only 模式：无法加载 {eig_file} 或 {oe_file}: {e}")
-        else:
-            raise FileNotFoundError(f"load_only 模式：文件不存在 - {eig_file} 或 {oe_file}")
-    
+                raise FileNotFoundError(
+                    f"load_only 模式：无法加载 {eig_file} 或 {oe_file}: {e}"
+                )
+        raise FileNotFoundError(
+            f"load_only 模式：文件不存在 - {eig_file} 或 {oe_file}"
+        )
+
     # 检查缓存
     if os.path.exists(eig_file) and os.path.exists(oe_file) and not force_recompute:
         print(f"\n发现已存在的计算结果，直接加载...")
         try:
-            eig_df = pd.read_csv(eig_file, sep='\t')
-            oe_matrix = np.loadtxt(oe_file)
-            return eig_df, oe_matrix
+            return _load_cached()
         except Exception as e:
             print(f"加载已有结果时出错: {str(e)}")
             print("将重新计算...")
-    
+
     # 计算 compartment
     print(f"\n开始计算 compartment...")
     eig_df = process_compartment(
@@ -71,7 +74,8 @@ def calculate_chromosome_data(
         resolution=resolution,
         fasta_path=fasta_path,
         output_dir=output_dir,
-        n_eigs=n_eigs
+        n_eigs=n_eigs,
+        sample_name=sample_name,
     )
     
     # 计算 O/E 矩阵（带 npy 缓存）
@@ -252,7 +256,7 @@ def plot_compartment(
     Parameters
     ----------
     eig_tsv_path : str
-        预计算的 eigenvector.{res}.tsv 路径(从 2_1_compartment_calculation 产物)
+        预计算的 eigenvector.{sample}.{res}.tsv 路径(从 2_1_compartment_calculation 产物)
     oe_npy_path : str
         预计算的 {sample}_{chrom}_{res}.oe.npy 路径
     output_dir : str
@@ -427,7 +431,7 @@ def slice_compartment_region(args):
       - **不调任何计算函数**(calculate_chromosome_data)
       - **不调任何 hicviz 函数**
       - 输入: 
-          - eig_tsv_path: 预计算的 eigenvector.{res}.tsv 路径(从 calculate_chromosome_data 产物)
+          - eig_tsv_path: 预计算的 eigenvector.{sample}.{res}.tsv 路径(从 calculate_chromosome_data 产物)
           - oe_npy_path: 预计算的 {sample}_{chrom}_{res}.oe.npy 路径(从 calculate_chromosome_data 产物)
       - 输出: 切片后的 region_eig_df + region_oe_matrix
       - 附加: idx 用于多 sample 并行结果排序
@@ -639,7 +643,7 @@ def generate_multi_compartment(
     Parameters
     ----------
     eig_tsv_paths : List[str]
-        预计算的 eigenvector.{res}.tsv 路径列表(每个 sample 一个)
+        预计算的 eigenvector.{sample}.{res}.tsv 路径列表(每个 sample 一个)
     oe_npy_paths : List[str]
         预计算的 npy 路径列表(每个 sample 一个)
     output_dir : str

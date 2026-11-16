@@ -11,6 +11,7 @@ from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec
 from matplotlib.colors import Normalize, LogNorm
 from matplotlib import ticker
 from cytoolz import merge
+import os
 import pandas as pd
 import cooltools
 import cooler
@@ -565,8 +566,11 @@ def process_saddle_sample(args):
         cache_dir = Path(cache_dir)
         cache_dir.mkdir(parents=True, exist_ok=True)
         
-        # 生成缓存文件名
-        cache_file = cache_dir / f"{sample_name}_saddle_data.pkl"
+        # 生成缓存文件名(带 eigenvector mtime / n_bins / contact_type, 避免 E1 更新后读到旧缓存)
+        eig_signature = int(os.path.getmtime(eigenvector_file))
+        cache_file = cache_dir / (
+            f"{sample_name}_saddle_{eig_signature}_{n_bins}_{contact_type}.pkl"
+        )
         
         # 尝试从缓存读取数据
         if cache_file.exists():

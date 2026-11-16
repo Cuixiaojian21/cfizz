@@ -427,22 +427,24 @@ def compartment(
     Stage 1 compartment 产物路径 helper
     
     产物命名(process_compartment + load_or_compute_oe_matrix 实际输出):
-    - eigenvector: {output_dir}/eigenvector.{res_str}.tsv
-                    例: eigenvector.1.0M.tsv
+    - eigenvector: {output_dir}/eigenvector.{sample_name}.{res_str}.tsv
+                    例: eigenvector.hiPSC_nor.100k.tsv
     - gc_cov:       {output_dir}/gc_cov.{res_str}.tsv
+    - qc:           {output_dir}/compartment_qc.{sample_name}.{res_str}.tsv
     - oe_npy:       {output_dir}/{sample}_{chrom}_{res_str_m}.oe.npy
                     例: 50_1_chr1_1M.oe.npy  (注意:oe 用 "1M" 不是 "1.0M")
     - oe_meta:      {output_dir}/{sample}_{chrom}_{res_str_m}.oe_meta.json
     
     Returns:
-        dict: {"eig_tsv", "gc_cov_tsv", "oe_npy", "oe_meta_json"}
+        dict: {"eig_tsv", "gc_cov_tsv", "qc_tsv", "oe_npy", "oe_meta_json"}
     """
     res_str = _res_str(resolution)          # "1.0M" / "100k"
     res_str_m = f"{resolution // 1_000_000}M" if resolution >= 1_000_000 else f"{resolution // 1000}k"
     
     return {
-        "eig_tsv": _os.path.join(output_dir, f"eigenvector.{res_str}.tsv"),
+        "eig_tsv": _os.path.join(output_dir, f"eigenvector.{sample_name}.{res_str}.tsv"),
         "gc_cov_tsv": _os.path.join(output_dir, f"gc_cov.{res_str}.tsv"),
+        "qc_tsv": _os.path.join(output_dir, f"compartment_qc.{sample_name}.{res_str}.tsv"),
         "oe_npy": _os.path.join(output_dir, f"{sample_name}_{chrom}_{res_str_m}.oe.npy"),
         "oe_meta_json": _os.path.join(output_dir, f"{sample_name}_{chrom}_{res_str_m}.oe_meta.json"),
     }

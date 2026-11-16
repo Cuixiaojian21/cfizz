@@ -21,7 +21,8 @@ Source: T-6.1 differential compute
 import sys
 import os
 # 脚本位于 cfizz/examples/diff/<name>.py → 上 4 层到 cfizz/
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.join(REPO_ROOT, "src"))
 
 import argparse
 import logging
@@ -68,7 +69,7 @@ from cfizz.analyze.loop import (
 # ============================================================================
 
 # === demo 路径(相对路径) ===
-# 脚本位于 cfizz/examples/diff/<name>.py → 上 3 层 (到 /mnt/g/2_0_demo/cfizz/) 拼 demo/
+# 脚本位于 cfizz/examples/diff/<name>.py → 把仓库的 src/ 加入 sys.path
 DEMO_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "demo")
 DATA_DIR = os.path.join(DEMO_DIR, "data")
 
@@ -115,9 +116,13 @@ TAD_WINDOW_CONFIG = {
 # 路径推导函数
 # ============================================================================
 
-def get_compartment_path(sample: str) -> Path:
+def get_compartment_path(sample: str, resolution: int = 100_000) -> Path:
     """获取 Compartment E1 文件路径"""
-    return BASE_5_1 / "compartment" / sample / "eigenvector.100k.tsv"
+    res_str = f"{resolution // 1000}k" if resolution < 1_000_000 else "1.0M"
+    return (
+        BASE_5_1 / "compartment" / sample
+        / f"eigenvector.{sample}.{res_str}.tsv"
+    )
 
 
 # demo mcool 文件名是 hiPSC_var_chr17.mcool / hiPSC_nor_chr17.mcool

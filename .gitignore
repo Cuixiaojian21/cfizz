@@ -98,3 +98,8 @@ __pycache__/                        # Python bytecode(预防)
 scratch/
 _tmp_*
 *.tmp.py
+
+# External / oversized demo data (not distributed)
+/demo/data/4DNF*.mcool
+/demo/output/_validation/
+/demo/output/**/cache/
