@@ -98,7 +98,9 @@ cfizz/
 │   └── config.py
 ├── examples/               # 可运行示例（冒烟测试 + 文档）
 ├── demo/                   # 15 MB demo 数据集与产物
-├── assets/figures/         # README 引用的图片
+├── assets/
+│   ├── branding/           # logo 与社交分享图
+│   └── figures/            # README 引用的图片
 ├── README.md               # 英文主文档
 ├── README.zh-CN.md         # 简体中文版
 ├── CONTRIBUTING.md         # 本文件英文版

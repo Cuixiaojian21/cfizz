@@ -87,6 +87,7 @@ examples_output/
 !docs/**/*.png
 !docs/**/*.pdf
 !assets/figures/*.png
+!assets/branding/*.png
 !assets/figures/*.pdf
 
 # Legacy / dev intermediate artifacts (do NOT release)

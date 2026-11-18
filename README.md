@@ -1,4 +1,10 @@
-# cfizz
+<p align="center">
+  <a href="https://github.com/Cuixiaojian21/cfizz">
+    <img src="https://raw.githubusercontent.com/Cuixiaojian21/cfizz/main/assets/branding/cfizz-mark-256.png" width="112" alt="cfizz logo">
+  </a>
+</p>
+
+<h1 align="center">cfizz</h1>
 
 > **C**hromosome **F**low **I**ntegration with **Z**one-**T**erminal **V**isuali**z**ation
 
@@ -674,7 +680,9 @@ These scripts are thin wrappers around fastp / bwa-mem2 / pairtools / cooler, no
 
 ```text
 cfizz/
-├── assets/figures/                 # image assets used by the README
+├── assets/
+│   ├── branding/                   # logo and social preview
+│   └── figures/                    # README figures
 ├── demo/
 │   ├── data/                       # 15 MB demo input
 │   └── output/                     # demo outputs

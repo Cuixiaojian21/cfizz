@@ -1,4 +1,10 @@
-# cfizz
+<p align="center">
+  <a href="https://github.com/Cuixiaojian21/cfizz">
+    <img src="assets/branding/cfizz-mark-256.png" width="112" alt="cfizz logo">
+  </a>
+</p>
+
+<h1 align="center">cfizz</h1>
 
 > **C**hromosome **F**low **I**ntegration with **Z**one-**T**erminal **V**isuali**z**ation
 > 染色体流整合与区段末端可视化
@@ -677,7 +683,9 @@ python examples/integrated/7_3_multi_gene.py
 
 ```text
 cfizz/
-├── assets/figures/                 # README 使用的图片资产
+├── assets/
+│   ├── branding/                   # logo 与社交分享图
+│   └── figures/                    # README 图片
 ├── demo/
 │   ├── data/                       # 15 MB demo 输入
 │   └── output/                     # demo 产物

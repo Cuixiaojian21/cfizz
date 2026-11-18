@@ -98,7 +98,9 @@ cfizz/
 │   └── config.py
 ├── examples/               # runnable examples (smoke tests + docs)
 ├── demo/                   # 15 MB demo dataset and outputs
-├── assets/figures/         # images referenced by the README
+├── assets/
+│   ├── branding/           # logo and social preview
+│   └── figures/            # images referenced by the README
 ├── README.md               # English main document
 ├── README.zh-CN.md         # Simplified Chinese version
 ├── CONTRIBUTING.md         # this file
