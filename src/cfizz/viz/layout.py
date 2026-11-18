@@ -7,6 +7,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from cfizz.utils.coordinates import print_coordinate, format_coordinate
+from cfizz.config import DEFAULT_SVG_DPI
 from typing import Optional
 from matplotlib.colors import LinearSegmentedColormap
 
@@ -571,7 +572,8 @@ def save_figure_multi_format(
     fig,
     output_path: str,
     dpi: int = 300,
-    formats: list = None
+    formats: list = None,
+    svg_dpi: int = DEFAULT_SVG_DPI
 ):
     """
     同时保存多种格式的图片（PNG + SVG）
@@ -586,6 +588,8 @@ def save_figure_multi_format(
         位图格式的分辨率
     formats : list
         要保存的格式列表，默认 ["png", "svg"]
+    svg_dpi : int
+        SVG 内嵌栅格的 dpi，默认 1000
         
     Returns
     -------
@@ -607,7 +611,7 @@ def save_figure_multi_format(
     for fmt in formats:
         save_path = f"{base_path}.{fmt}"
         if fmt == "svg":
-            fig.savefig(save_path, format="svg", bbox_inches='tight')
+            fig.savefig(save_path, format="svg", dpi=svg_dpi, bbox_inches='tight')
         elif fmt == "png":
             fig.savefig(save_path, format="png", dpi=dpi, bbox_inches='tight')
         elif fmt == "jpg" or fmt == "jpeg":

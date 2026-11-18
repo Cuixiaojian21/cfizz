@@ -3,150 +3,237 @@
 > Chromosome Flow Integration with Zone-Terminal Visualization
 > End-to-end Hi-C differential analysis and zone-terminal visualization.
 
-Thank you for your interest in cfizz! This guide covers the essentials for contributing code, bug fixes, documentation, and examples to the project.
+Thank you for your interest in cfizz. This guide covers the development setup, code and documentation conventions, examples, and the pull-request workflow.
 
-## Quick Start
+## Quick start
 
 ```bash
-# Clone and install for development
-git clone https://github.com/<username>/cfizz.git
+git clone https://github.com/Cuixiaojian21/cfizz.git
 cd cfizz
-pip install -e ".[all]"
 
-# Run the test suite (examples = tests, see test philosophy below)
-python -m pytest cfizz/ -x  # optional; we primarily test via examples
+micromamba env create -f environment.yml
+micromamba activate cfizz
+
+pip install -r requirements.txt
+pip install -e ".[all]"
 ```
 
-## Design Philosophy
+Scripts under `examples/` add `src/` to `sys.path`, so an editable install is not strictly required for running them. For regular development, `pip install -e ".[all]"` is recommended.
 
-cfizz is built around four first-class commitments:
+There is no separate `pytest` suite. The examples are the smoke tests: if the relevant example runs and produces the expected figure or table, the feature works.
 
-### 1. End-to-end pipeline (Flow)
+## Design principles
 
-Every analysis step should be reachable from a one-liner. From `.mcool` → TAD/Loop/A-B compartment call → differential comparison → publication-ready figure, the chain should not require hand-wiring.
+cfizz is built around four commitments.
 
-### 2. Multi-omics integration (Integration)
+### 1. End-to-end flow
 
-cfizz treats Hi-C + BigWig + GTF + BED as first-class inputs. Tracks compose via a unified config dictionary:
+Every analysis step should be reachable without hand-wiring intermediate files. The intended chain is:
+
+```text
+FASTQ (optional) → .mcool → Compartment / TAD / Loop → altered features → publication-ready figure
+```
+
+The FASTQ preprocessing scripts are an optional reference implementation. Users who already have `.mcool` files can start there.
+
+### 2. Integration
+
+cfizz treats Hi-C, BigWig, GTF and BED as first-class inputs. Tracks are composed through dictionaries:
 
 ```python
 tracks = [
-    {"type": "gtf",       "path": "genes.gtf"},
-    {"type": "bigwig",    "path": "CTCF.bw"},
-    {"type": "loop",      "path": "loops.bedpe"},
+    {"file": "genes.gtf", "gtf_style": "flybase", "labels": True},
+    {"file": "CTCF.bw", "color": "#264653", "name": "CTCF"},
+    {"file": "enhancers.bed", "color": "purple", "name": "Enhancers"},
 ]
 ```
 
-### 3. Zone-Terminal visualization (Zonal Visualization)
+Hi-C panels use the same idea:
 
-The Zone-Terminal module is cfizz's signature: a unified visualization layer that takes any genomic region × any combination of tracks × any number of samples, and produces publication-ready figures.
+```python
+hics = [
+    {
+        "file": "sample.mcool",
+        "name": "sample",
+        "balance": True,
+        "resolution": 10_000,
+        "triangle_ratio": 1.0,
+        "insulation_path": "tad/1_0.sample.10000.insulation.tsv",
+        "window_size": 100_000,
+        "loops_path": "loops/sample.10k.loops.txt",
+    }
+]
+```
 
-**Two semantic dimensions**:
-- **Zonal (分区式适配)**: Adapts to A/B compartments, TADs, loops as zonal overlays.
-- **Terminal (终端模块)**: Sits at the terminal step of the analysis pipeline, as the last-mile companion that converts analytical results into publication figures.
+### 3. Zone-Terminal visualization
 
-### 4. Example = Test = Documentation
+The Zone-Terminal module is cfizz's visualization layer:
 
-Every public function ships with at least one runnable example in `examples/`. The example serves as:
+- **Zonal**: overlays adapt to Compartment, TAD and Loop regions.
+- **Terminal**: sits at the end of the pipeline, turning results into publication-grade figures.
 
-- **Test**: If `python3 examples/...py` runs and produces a figure, the function works.
-- **Documentation**: The example is the canonical usage pattern.
-- **Demo**: The resulting figure is the visual proof.
+Figures expose physical sizing (`width_cm` / `height_cm` or `plot_size`) and high-dpi output. Heatmaps embedded in SVG use `svg_dpi` (default 1000) so they remain sharp when zoomed.
 
-When you add or change a function, **add or update its example**.
+### 4. Example = test = documentation
 
-## Coding Conventions
+Every public feature should have at least one runnable example in `examples/`. An example is:
+
+- a **smoke test** — running it verifies the feature;
+- **documentation** — it is the canonical usage pattern;
+- a **demo** — the generated figure is the visual proof.
+
+When adding or changing a function, add or update its example.
+
+## Project layout
+
+```text
+cfizz/
+├── src/cfizz/              # installable package (src layout)
+│   ├── analyze/            # Compartment / TAD / Loop / O/E / distance
+│   ├── api/integrated/     # quick_plot / saddle / APA / tracks
+│   ├── io/                 # cooler / BED / GTF / BigWig / path helpers
+│   ├── preprocessing/      # optional FASTQ → mcool wrappers
+│   ├── utils/              # coordinates / intervals / BEDPE
+│   ├── viz/                # heatmap / compartment / TAD / loop / pileup
+│   └── config.py
+├── examples/               # runnable examples (smoke tests + docs)
+├── demo/                   # 15 MB demo dataset and outputs
+├── assets/figures/         # images referenced by the README
+├── README.md               # English main document
+├── README.zh-CN.md         # Simplified Chinese version
+├── CONTRIBUTING.md         # this file
+├── CONTRIBUTING.zh-CN.md   # Chinese version
+└── LICENSE
+```
+
+Do not put the package directly at `cfizz/`, `io/`, `analyze/` and so on. The package lives under `src/cfizz/`; the repository root only contains project files.
+
+## Coding conventions
 
 ### Naming
-- Functions: `verb_noun` (e.g. `compute_insulation`, `plot_multi_heatmap`)
-- Classes: `PascalCase`
-- Constants: `UPPER_SNAKE_CASE`
-- Config dict keys: `snake_case`
-- Module-private: leading underscore (`_helper_function`)
 
-### Public API surface
-- Public functions live at the module level (no deep nesting in public APIs).
-- Add a docstring with: one-line summary, Parameters, Returns, Example (callable).
-- Internal helpers (used only inside cfizz) are prefixed with `_`.
+- Functions: `verb_noun`, e.g. `compute_insulation`, `plot_multi_heatmap`.
+- Classes: `PascalCase`.
+- Constants: `UPPER_SNAKE_CASE`.
+- Config-dict keys: `snake_case`.
+- Internal helpers: leading underscore, e.g. `_helper_function`.
 
-### Imports
-- Import order: stdlib → third-party → cfizz.
-- Each import on its own line in production code.
+### Public API
+
+- Public functions live at module level.
+- Every public function has a docstring with a one-line summary, parameters, returns and a callable example where practical.
+- Internal helpers are prefixed with `_`.
+- Keep backwards compatibility when adding optional parameters; append new keyword arguments rather than changing positional order.
+
+### Imports and typing
+
+- Import order: standard library → third-party → cfizz.
 - Avoid `import *`.
-- cfizz must not depend on out-of-tree code; all functionality is implemented locally.
+- Public APIs use type hints.
+- Use `Optional[X]`, not `X | None`, for Python 3.9 compatibility.
 
-### Type hints
-- All public APIs use type hints.
-- Internal helpers may omit.
-- Use `Optional[X]` not `X | None` for compatibility with Python 3.9.
+### Figures and output
 
-## Submitting Changes
+- Use `width_cm` / `plot_size` for physical sizing; do not hard-code pixel dimensions for publication figures.
+- Save both PNG and SVG for user-facing figures.
+- Preserve the distinction between vector text/lines and rasterized heatmaps.
+- Prefer `svg_dpi=1000` or higher for heatmaps embedded in SVG; document any exception.
 
-### Pull request workflow
+## Example conventions
+
+Examples should:
+
+- use relative paths and the bundled demo data where possible;
+- be runnable from the repository root;
+- print the output location;
+- write to `demo/output/`;
+- fail loudly on missing required inputs;
+- avoid machine-specific absolute paths in committed examples (document overrides such as `CFIZZ_FASTA` instead).
+
+When adding an example:
+
+1. Add the script under `examples/` (or `examples/diff/`, `examples/integrated/`).
+2. Use `demo/data/` and `demo/output/` unless the example explicitly documents external data.
+3. Run it.
+4. Inspect the generated figure or table.
+5. Add a short section to `README.md` and `README.zh-CN.md`.
+6. If the output is shown in the README, add the image to `assets/figures/` or reference a committed demo output.
+
+## Documentation conventions
+
+- `README.md` is the English main document; `README.zh-CN.md` is the Simplified Chinese version.
+- `README.md` uses absolute GitHub raw image URLs so the same content renders on GitHub and PyPI.
+- `README.zh-CN.md` uses relative paths for GitHub and local preview.
+- Keep the two language versions structurally aligned.
+- Use sentence-case headings and one H1 per document.
+- Use fenced code blocks with a language tag (`bash`, `python`, `text`, `mermaid`).
+- Use the project name `cfizz` in lowercase, including in commands and code.
+- In prose, use `altered feature` for the 6_x concept; code and file names keep `differential` / `diff`.
+- Update the table of contents when adding or renaming headings.
+
+## Testing and verification
+
+There is no `pytest` suite. Verify changes by running the relevant example(s):
+
+```bash
+python examples/5_1_primary_analysis_template.py
+python examples/5_2_primary_analysis_visualization.py
+python examples/diff/6_1_differential_compute.py
+```
+
+For a quick syntax check:
+
+```bash
+python -m py_compile path/to/changed_file.py
+```
+
+For documentation changes, check:
+
+- image paths exist;
+- links and anchors resolve;
+- code blocks are balanced;
+- numbers and file names match the current outputs.
+
+## Commit and pull-request workflow
 
 1. Fork and clone the repository.
-2. Create a feature branch: `git checkout -b feat/your-feature`.
-3. Make your changes.
-4. Run and verify the relevant example(s):
-   ```bash
-   python3 examples/<your-area>/<your-example>.py
-   ```
-   Verify the output figure looks correct.
-5. Commit your work with a descriptive message.
-6. Open a Pull Request describing: what changed, why, and which example(s) demonstrate the change.
+2. Create a branch: `git checkout -b feat/your-feature`.
+3. Make the change.
+4. Run and inspect the relevant example(s).
+5. Commit with a clear message.
+6. Open a pull request describing what changed, why, and which example demonstrates it.
 
-### Commit messages
+Commit messages: a short first line (≤72 chars), followed by a body explaining **why**.
 
-Use a clear, descriptive summary on the first line (≤72 chars). Add a body explaining **why** rather than **what**.
+Example:
 
-Good:
-```
-Add quick_plot_integrated support for insulation overlay
+```text
+Add SVG rasterization dpi control for quick_plot_integrated
 
-- Resolves #123
-- Enables TAD boundary display next to the heatmap
-- Tested via examples/integrated/7_3_multi_gene.py
+- Pass svg_dpi through to HeatmapTracks.plot
+- Keep PNG dpi independent
+- Verified with examples/5_2_primary_analysis_visualization.py
 ```
 
-### Bug reports
+## Bug reports
 
-When filing a bug, please include:
-- cfizz version (`python3 -c "import cfizz; print(cfizz.__version__)"`)
-- Python version
-- Operating system
-- Minimal reproducing code (or the example you're running)
-- Expected vs. actual output
-- Traceback (if applicable)
+Please include:
 
-## Project Structure
+- cfizz version (`python -c "import cfizz; print(cfizz.__version__)"`);
+- Python version and operating system;
+- minimal reproduction code or the example you ran;
+- expected vs actual output;
+- traceback or relevant log excerpt.
 
-```
-cfizz/
-├── __init__.py
-├── io/             # I/O: coolers, BED/GTF/BigWig readers
-├── analyze/        # Algorithms: insulation, compartments, TADs, loops, O/E
-├── viz/            # Visualization: heatmaps, tracks, pileups, layouts
-├── api/            # High-level user-facing API
-│   └── integrated/ # Zone-Terminal visualization
-├── utils/          # Cross-cutting utilities (coordinates, range)
-├── examples/       # Example = Test = Documentation
-│   ├── heatmap/
-│   ├── compartment/
-│   ├── tad/
-│   ├── loop/
-│   ├── distance/
-│   ├── diff/
-│   ├── integrated/
-│   └── io/
-└── ...
-```
+Open issues at <https://github.com/Cuixiaojian21/cfizz/issues>.
 
 ## Community
 
-- Issues: <github-issues-url>
-- Discussions: <github-discussions-url>
+- Issues: <https://github.com/Cuixiaojian21/cfizz/issues>
 - Maintainer: cfizz developers
+
+Be respectful and constructive in discussions.
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the MIT License. See [LICENSE](LICENSE) for details.
+By contributing, you agree that your contributions are licensed under the MIT License. See [LICENSE](LICENSE) for details.

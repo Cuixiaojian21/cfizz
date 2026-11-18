@@ -15,6 +15,7 @@ from matplotlib.colors import LogNorm, Normalize
 
 from cfizz.io import read_cooler
 from cfizz.io.insulation import read_insulation_scores
+from cfizz.config import DEFAULT_SVG_DPI
 from cfizz.viz.layout import (
     setup_plot_style,
     setup_axes,
@@ -41,6 +42,7 @@ class HeatmapTracks:
         layout: 'IntegratedLayout',
         output: str,
         dpi: int = 300,
+        svg_dpi: int = DEFAULT_SVG_DPI,
         # Hi-C specific parameters
         hic_cmap: str = 'Reds',
         hic_color_scale: str = 'linear',
@@ -86,6 +88,8 @@ class HeatmapTracks:
             Output file path
         dpi : int
             Resolution for PNG
+        svg_dpi : int
+            Rasterization dpi for images embedded in SVG. Default 1000.
         hic_cmap : str
             Colormap for Hi-C heatmap
         hic_color_scale : str
@@ -305,7 +309,7 @@ class HeatmapTracks:
         # Save output
         output_path = Path(output)
         fig.savefig(f"{output_path}.png", dpi=dpi)
-        fig.savefig(f"{output_path}.svg")
+        fig.savefig(f"{output_path}.svg", dpi=svg_dpi)
         plt.close()
 
     # ------------------------------------------------------------------

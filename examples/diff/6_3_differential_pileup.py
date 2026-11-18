@@ -224,8 +224,8 @@ def plot_diff_loops_apa(loops_df, diff_type, comparison, output_dir, logger):
             color_scale='linear',          # ← 用户指定 (替代默认 log2)
             vmin=0.5, vmax=2.0,            # obs/exp 中心 1 (linear 范围)
             cbar_label='median obs/exp',  # linear 时无括号
-            plot_size=3.0,
-            dpi=300,
+            plot_size=4.0,
+            dpi=3000,
         )
         for ext in ['.png', '.svg']:
             output_file = Path(f"{output_prefix}{ext}")
@@ -283,7 +283,7 @@ def plot_diff_tad_pileup(boundaries_df, diff_type, window_mult, comparison, outp
             color_scale='log2',                       # T-6.18: OE + log2
             color_scale_for_cbar='log2',              # T-6.18: cbar 刻度跟 heatmap 一致
             cmap='coolwarm',                          # T-6.18: OE 风格发散型 cmap
-            plot_size=3.0,                            # 保持 4cm
+            plot_size=4.0,                            # 4 cm（与其它 heatmap 统一）
             cbar_label='log2(mean obs/exp)',          # 跟 method='mean' + color_scale='log2' 一致
             expected_dfs=expected_dfs,                # T-6.18: per-sample P(s)
         )

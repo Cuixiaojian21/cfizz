@@ -168,7 +168,7 @@ def visualize_heatmap(samples, viz_dir):
             output=output,
             n_tracks=0,
             dpi=300,
-            width_cm=8.0,
+            width_cm=6.0,
         )
         elapsed = time.time() - start
         results.append(("quick_plot_integrated", 'success', elapsed))
@@ -337,13 +337,13 @@ def visualize_tad(samples, viz_dir, tad_dir):
                     'name': sample_name,
                     'insulation_path': insulation_path,
                     'window_size': window_size,
-                    'boundary_cmap': 'Blues_r',
+                    'boundary_cmap': 'Blues',
                     'boundary_alpha': 0.9
                 }],
                 tracks=[],
                 region=GenomeRange(chrom=chrom, start=start_pos, end=end_pos),
                 output=output,
-                width_cm=8,
+                width_cm=6,
                 gap_cm=0.2,
                 left_margin_cm=1.0,
                 right_margin_cm=2.0,
@@ -377,7 +377,7 @@ def visualize_tad(samples, viz_dir, tad_dir):
                     'flip_vertical': flip,
                     'insulation_path': insulation_path,  # 各自用自己的 boundary
                     'window_size': window_size,
-                    'boundary_cmap': 'Blues_r',
+                    'boundary_cmap': 'Blues',
                     'boundary_alpha': 0.9
                 })
             
@@ -387,7 +387,7 @@ def visualize_tad(samples, viz_dir, tad_dir):
                 tracks=[],
                 region=GenomeRange(chrom=chrom, start=start_pos, end=end_pos),
                 output=output,
-                width_cm=8,
+                width_cm=6,
                 gap_cm=0.2,
                 left_margin_cm=1.0,
                 right_margin_cm=2.0,
@@ -448,7 +448,7 @@ def visualize_loop(samples, viz_dir, loop_dir):
                 resolution=resolution,
                 loop_color='blue',
                 loop_alpha=0.6,
-                loop_size=2,
+                loop_size=8,
                 balance=False,
             )
             elapsed = time.time() - start
@@ -483,7 +483,7 @@ def visualize_loop(samples, viz_dir, loop_dir):
                 resolution=resolution,
                 loop_color='blue',
                 loop_alpha=0.6,
-                loop_size=2,
+                loop_size=8,
                 balance=False,
                 plot_size=4,
             )
@@ -516,7 +516,7 @@ def visualize_loop(samples, viz_dir, loop_dir):
                     'loops_path': loops_path,
                     'loop_color': 'blue',
                     'loop_alpha': 0.8,
-                    'loop_size': 15,
+                    'loop_size': 8,
                 })
             output = f"{qp_viz_dir}/quick_plot_integrated"
             quick_plot_integrated(
@@ -525,7 +525,7 @@ def visualize_loop(samples, viz_dir, loop_dir):
                 output=output,
                 n_tracks=0,
                 dpi=3000,
-                width_cm=8.0,
+                width_cm=6.0,
             )
             elapsed = time.time() - start
             results.append(("quick_plot_integrated", 'success', elapsed))

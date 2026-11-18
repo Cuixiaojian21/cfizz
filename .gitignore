@@ -86,6 +86,8 @@ examples_output/
 *.pdf
 !docs/**/*.png
 !docs/**/*.pdf
+!assets/figures/*.png
+!assets/figures/*.pdf
 
 # Legacy / dev intermediate artifacts (do NOT release)
 _full_pipeline_results/            # 旧 hPSC dev scripts 产物

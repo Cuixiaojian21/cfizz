@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 from typing import Optional
+from cfizz.config import DEFAULT_SVG_DPI
 
 
 def setup_plot_style():
@@ -273,9 +274,9 @@ def setup_colorbar(fig, sc, vmin, vmax, balance=False,
              transform=cax.transAxes)
 
 
-def save_figure(fig, output_prefix):
+def save_figure(fig, output_prefix, svg_dpi: int = DEFAULT_SVG_DPI):
     """保存图片"""
-    fig.savefig(f'{output_prefix}.svg', format='svg', dpi=300, bbox_inches='tight')
+    fig.savefig(f'{output_prefix}.svg', format='svg', dpi=svg_dpi, bbox_inches='tight')
     fig.savefig(f'{output_prefix}.png', format='png', dpi=300, bbox_inches='tight', facecolor='white')
     print(f"图片已保存: {output_prefix}.svg/.png")
 
@@ -384,7 +385,7 @@ def generate_output_filename(prefix, chrom=None, start=None, end=None, resolutio
     return "_".join(parts)
 
 
-def save_figure_multi_format(fig, output_prefix, formats=None):
+def save_figure_multi_format(fig, output_prefix, formats=None, svg_dpi: int = DEFAULT_SVG_DPI):
     """保存多种格式的图片"""
     if formats is None:
         formats = ['svg', 'png']
@@ -393,7 +394,7 @@ def save_figure_multi_format(fig, output_prefix, formats=None):
         if fmt == 'png':
             fig.savefig(f'{output_prefix}.png', format='png', dpi=300, bbox_inches='tight', facecolor='white')
         elif fmt == 'svg':
-            fig.savefig(f'{output_prefix}.svg', format='svg', dpi=300, bbox_inches='tight')
+            fig.savefig(f'{output_prefix}.svg', format='svg', dpi=svg_dpi, bbox_inches='tight')
         elif fmt == 'pdf':
             fig.savefig(f'{output_prefix}.pdf', format='pdf', bbox_inches='tight')
     

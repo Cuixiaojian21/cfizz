@@ -47,8 +47,8 @@ all = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/<username>/cfizz"
-"Issues" = "https://github.com/<username>/cfizz/issues"
+"Homepage" = "https://github.com/Cuixiaojian21/cfizz"
+"Issues" = "https://github.com/Cuixiaojian21/cfizz/issues"
 
 [tool.setuptools]
 include-package-data = true

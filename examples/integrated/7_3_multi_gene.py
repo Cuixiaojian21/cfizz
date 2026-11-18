@@ -25,7 +25,7 @@ from pathlib import Path
 
 # T-9.14: 让 python 7_3_multi_gene.py 直接跑(不需要 PYTHONPATH)
 # 相对路径:7_× 在 cfizz/examples/integrated/<name>.py → 上 4 层到项目根目录
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "src"))
 
 from cfizz.api.integrated import quick_plot_integrated
 from cfizz.api.integrated.heatmap_tracks import GenomeRange
@@ -447,7 +447,7 @@ def run_multi_gene_visualization(
         tracks=tracks,
         region=GenomeRange(chrom, start, end),
         output=output_prefix,
-        width_cm=kwargs.get("width", 8),         # l_2 默认 8
+        width_cm=kwargs.get("width", 6),         # 默认 6
         gap_cm=kwargs.get("gap", 0.1),
         left_margin_cm=kwargs.get("left_margin", 1.0),
         right_margin_cm=kwargs.get("right_margin", 2.0),
@@ -493,7 +493,7 @@ if __name__ == "__main__":
         comparison=COMPARISON,
         region=REGION,
         output_dir=str(output_dir),
-        width=8,
+        width=6,
         gap=0.1,
         track_height=0.8,
         gtf_height=0.5,

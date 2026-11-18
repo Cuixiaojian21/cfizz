@@ -32,7 +32,7 @@ log2 文件特性:
 - 基于 7_1 模板,8 条 BW 顺序:ATAC×2 → H3K27ac×2 → CTCF×2 → log2(ATAC+RNA)×2
 - USE_TRACK_YLIM = False:不指定 min/max,看 log2 自然范围
 - import 改为 cfizz.api.integrated.{quick_plot_integrated, GenomeRange}
-- 默认 width=8 / left_margin=1.0 / right_margin=2.0(跟 l_2)
+- 默认 width=6 / left_margin=1.0 / right_margin=2.0(跟 l_2)
 - 产物目录:examples_output/7_2/
 """
 
@@ -43,7 +43,7 @@ from pathlib import Path
 
 # T-9.14: 让 python 7_2_log2_tracks.py 直接跑(不需要 PYTHONPATH)
 # 相对路径:7_× 在 cfizz/examples/integrated/<name>.py → 上 4 层到项目根目录
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "src"))
 
 from cfizz.api.integrated import quick_plot_integrated
 from cfizz.api.integrated.heatmap_tracks import GenomeRange
@@ -469,7 +469,7 @@ def run_multi_gene_visualization(
         tracks=tracks,
         region=GenomeRange(chrom, start, end),
         output=output_prefix,
-        width_cm=kwargs.get("width", 8),         # l_2 默认 8
+        width_cm=kwargs.get("width", 6),         # 默认 6
         gap_cm=kwargs.get("gap", 0.1),
         left_margin_cm=kwargs.get("left_margin", 1.0),
         right_margin_cm=kwargs.get("right_margin", 2.0),
@@ -505,7 +505,7 @@ def main():
         comparison=COMPARISON,
         region=REGION,
         output_dir=str(OUTPUT_DIR),
-        width=8, gap=0.1, track_height=0.8, gtf_height=0.5,
+        width=6, gap=0.1, track_height=0.8, gtf_height=0.5,
         fontsize=5, left_margin=1.0, right_margin=2.0, dpi=300,
     )
 

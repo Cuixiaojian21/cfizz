@@ -10,6 +10,7 @@ Hi-C heatmap and genomic tracks visualizations with minimal configuration.
 from typing import List, Optional
 from cfizz.api.integrated.heatmap_tracks import HeatmapTracks, GenomeRange
 from cfizz.api.integrated.layout import calculate_integrated_layout
+from cfizz.config import DEFAULT_SVG_DPI
 
 
 def quick_plot_integrated(
@@ -27,6 +28,7 @@ def quick_plot_integrated(
     left_margin_cm: float = 1.0,
     right_margin_cm: float = 2.0,
     dpi: int = 300,
+    svg_dpi: int = DEFAULT_SVG_DPI,
     triangle_ratio: float = 1.0,
     hic_cmap: str = 'Reds',
     hic_color_scale: str = 'linear',
@@ -80,6 +82,8 @@ def quick_plot_integrated(
         Right margin in centimeters.
     dpi : int, default 300
         Output resolution.
+    svg_dpi : int, default 1000
+        Rasterization dpi for heatmaps embedded in SVG.
     triangle_ratio : float, default 1.0
         Triangle display ratio (0.0-1.0).
     hic_cmap : str, default 'Reds'
@@ -286,6 +290,7 @@ def quick_plot_integrated(
         layout=layout,
         output=output,
         dpi=dpi,
+        svg_dpi=svg_dpi,
         hic_cmap=extracted_hic_cmaps[0],
         hic_color_scale=extracted_hic_color_scales[0],
         balance=extracted_balances[0],

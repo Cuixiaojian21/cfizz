@@ -16,6 +16,9 @@ SADDLE_CMAP = "coolwarm"
 # Plot settings
 DEFAULT_DPI = 300
 PUBLICATION_DPI = 600
+# SVG output: rasterized heatmaps are embedded as PNG inside the SVG.
+# A high rasterization dpi keeps them sharp when zoomed in a browser.
+DEFAULT_SVG_DPI = 1000
 
 # Parallel processing
 DEFAULT_N_JOBS = 8
